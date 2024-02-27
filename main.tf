@@ -159,14 +159,15 @@ resource "aws_lb" "mi_alb" {
 
 resource "aws_lb_listener" "listener" {
   load_balancer_arn = aws_lb.mi_alb.arn
-  port              = 80
-  protocol          = "HTTP"
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = aws_acm_certificate.mi_certificado_acm.arn
 
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.mi_tg.arn
   }
-  certificate_arn = aws_acm_certificate.mi_certificado_acm.arn
 }
 
 resource "aws_lb_target_group" "mi_tg" {
