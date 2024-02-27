@@ -192,7 +192,7 @@ resource "aws_ecs_service" "mi_servicio_ecs" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = [aws_subnet.mi_subnet_publica_a.id]
+    subnets         = [aws_subnet.mi_subnet_publica_a.id, aws_subnet.mi_subnet_publica_b.id]
     security_groups = [aws_security_group.mi_sg.id]
     assign_public_ip = true
   }
