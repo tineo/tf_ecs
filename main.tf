@@ -1,11 +1,11 @@
 provider "aws" {
-  region = "us-east-1"
+  region = var.region
 }
 
 # Crea una Virtual Private Cloud (VPC) con un bloque CIDR 10.0.0.0/16
 # habilita el soporte DNS y los nombres de host DNS, y la etiqueta con el nombre "mi-vpc".
 resource "aws_vpc" "mi_vpc" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block = var.vpc_cidr_block
   enable_dns_support = true
   enable_dns_hostnames = true
   tags = {
@@ -16,8 +16,8 @@ resource "aws_vpc" "mi_vpc" {
 # ambas configuradas para asignar IPs públicas a instancias lanzadas dentro de ellas y etiquetadas como "mi-subnet-publica".
 resource "aws_subnet" "mi_subnet_publica_a" {
   vpc_id            = aws_vpc.mi_vpc.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "us-east-1a"
+  cidr_block        = var.subnet_public_a_cidr
+  availability_zone = "${var.region}a"
   map_public_ip_on_launch = true
   tags = {
     Name = "mi-subnet-publica"
@@ -26,8 +26,8 @@ resource "aws_subnet" "mi_subnet_publica_a" {
 
 resource "aws_subnet" "mi_subnet_publica_b" {
   vpc_id            = aws_vpc.mi_vpc.id
-  cidr_block        = "10.0.2.0/24"
-  availability_zone = "us-east-1b"
+  cidr_block        = var.subnet_public_b_cidr
+  availability_zone = "${var.region}b"
   map_public_ip_on_launch = true
   tags = {
     Name = "mi-subnet-publica"
@@ -251,7 +251,7 @@ resource "aws_route_table_association" "b" {
 
 # Crear un certificado ACM
 resource "aws_acm_certificate" "mi_certificado_acm" {
-  domain_name       = "challenge.makinap.com"
+  domain_name       = var.domain_name
   validation_method = "DNS"
 
   tags = {
