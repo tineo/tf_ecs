@@ -2,6 +2,8 @@ provider "aws" {
   region = "us-east-1"
 }
 
+# Crea una Virtual Private Cloud (VPC) con un bloque CIDR 10.0.0.0/16
+# habilita el soporte DNS y los nombres de host DNS, y la etiqueta con el nombre "mi-vpc".
 resource "aws_vpc" "mi_vpc" {
   cidr_block = "10.0.0.0/16"
   enable_dns_support = true
@@ -10,7 +12,8 @@ resource "aws_vpc" "mi_vpc" {
     Name = "mi-vpc"
   }
 }
-
+# Estas subredes definen dos áreas separadas dentro de la VPC en diferentes zonas de disponibilidad (us-east-1a y us-east-1b) para alta disponibilidad
+# ambas configuradas para asignar IPs públicas a instancias lanzadas dentro de ellas y etiquetadas como "mi-subnet-publica".
 resource "aws_subnet" "mi_subnet_publica_a" {
   vpc_id            = aws_vpc.mi_vpc.id
   cidr_block        = "10.0.1.0/24"
@@ -30,7 +33,8 @@ resource "aws_subnet" "mi_subnet_publica_b" {
     Name = "mi-subnet-publica"
   }
 }
-
+# Crea un grupo de seguridad para controlar el acceso a los recursos dentro de la VPC. 
+# Permite tráfico entrante en los puertos 80 y 8080 (HTTP y un puerto personalizado) y permite todo el tráfico saliente.
 resource "aws_security_group" "mi_sg" {
   name        = "mi-sg"
   description = "Mi grupo de seguridad para ECS"
@@ -62,11 +66,12 @@ resource "aws_security_group" "mi_sg" {
     Name = "mi-sg"
   }
 }
-
+# Se define un clúster ECS llamado "mi-cluster-ecs" donde se ejecutarán las tareas y servicios de contenedores.
 resource "aws_ecs_cluster" "mi_cluster_ecs" {
   name = "mi-cluster-ecs"
 }
-
+# Crea un rol IAM para la ejecución de tareas de ECS y adjunta la política de rol estándar de AWS para la ejecución de tareas de ECS, 
+# permitiendo que las tareas asuman este rol para interactuar con otros servicios de AWS.
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "ecs_task_execution_role"
 
@@ -87,16 +92,19 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
   role       = aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
-
+# Recupera la información de un repositorio de Amazon Elastic Container Registry (ECR) existente llamado "challenge".
+# El cual se ha creado en el otro repo github
 data "aws_ecr_repository" "mi_repositorio_ecr" {
   name = "challenge"
 }
 
-# CloudWatch
+# Crea un grupo de logs en Amazon CloudWatch para almacenar los logs de las aplicaciones que se ejecutan en los contenedores.
 resource "aws_cloudwatch_log_group" "mi_grupo_de_logs" {
   name = "/ecs/mi-aplicacion"
 }
 
+# Define una tarea ECS para la aplicación, incluyendo configuración como el rol de ejecución, la red, los recursos de CPU y memoria
+# y la definición del contenedor, que usa una imagen del repositorio ECR, configura mapeo de puertos y especifica la configuración de logs.
 resource "aws_ecs_task_definition" "mi_tarea" {
   family                   = "mi-aplicacion"
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
@@ -131,6 +139,8 @@ resource "aws_ecs_task_definition" "mi_tarea" {
   ])
 }
 
+# Crea un balanceador de carga de aplicaciones (ALB), un oyente para el ALB que escucha en el puerto 80
+# y un grupo objetivo para el ALB que especifica en qué puerto deben recibir las instancias el tráfico, junto con una comprobación de salud.
 resource "aws_lb" "mi_alb" {
   name               = "mi-alb"
   internal           = false
@@ -162,7 +172,7 @@ resource "aws_lb_target_group" "mi_tg" {
   health_check {
     enabled = true
     protocol           = "HTTP"
-    path               = "/"  # Ajusta esto según el endpoint de salud de tu aplicación
+    path               = "/"  
     healthy_threshold   = 3
     unhealthy_threshold = 3
     timeout             = 60
@@ -170,6 +180,9 @@ resource "aws_lb_target_group" "mi_tg" {
     matcher             = "200"
   }
 }
+
+# Define un servicio ECS que especifica cómo se debe ejecutar la tarea definida anteriormente en el clúster ECS
+# incluyendo la configuración de red y cómo debe interactuar con el ALB.
 
 resource "aws_ecs_service" "mi_servicio_ecs" {
   name            = "mi-servicio-ecs"
@@ -192,7 +205,9 @@ resource "aws_ecs_service" "mi_servicio_ecs" {
 
 }
 
-# Crear una Internet Gateway
+# Crea una Internet Gateway para la VPC, una tabla de rutas que incluye una ruta por defecto para dirigir el tráfico hacia la Internet Gateway
+# y asocia esta tabla de rutas con las subredes públicas para permitir el acceso a Internet.
+
 resource "aws_internet_gateway" "mi_igw" {
   vpc_id = aws_vpc.mi_vpc.id
 
