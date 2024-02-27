@@ -52,6 +52,12 @@ resource "aws_security_group" "mi_sg" {
     to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  } 
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
 
@@ -160,6 +166,7 @@ resource "aws_lb_listener" "listener" {
     type             = "forward"
     target_group_arn = aws_lb_target_group.mi_tg.arn
   }
+  certificate_arn = aws_acm_certificate.mi_certificado_acm.arn
 }
 
 resource "aws_lb_target_group" "mi_tg" {
@@ -241,4 +248,17 @@ resource "aws_route_table_association" "b" {
   route_table_id = aws_route_table.mi_ruta_table.id
 }
 
+# Crear un certificado ACM
+resource "aws_acm_certificate" "mi_certificado_acm" {
+  domain_name       = "challenge.makinap.com"
+  validation_method = "DNS"
+
+  tags = {
+    Name = "mi-certificado-acm"
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
 
